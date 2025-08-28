@@ -1,7 +1,7 @@
 <?php
 // session_start(); 
 require_once('auth.php'); 
-require_once('../db/connection.php');
+require_once('./db/connection.php');
 
 
 $stmt = $pdo->query("SELECT * FROM teachers ORDER BY id ASC");
