@@ -2,7 +2,7 @@
 try {
     // Database connection details from your InfinityFree panel
     $host = 'yamabiko.proxy.rlwy.net';
-    $dbname = 'cyberv2';
+    $dbname = 'cyberv3';
     $user = 'root';
     $password = 'GMnExWwRKkXhUcodjLInPtoQKwdkkyNN';
     $port = 18491;
