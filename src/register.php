@@ -63,7 +63,7 @@ a { color:#4e73df; text-decoration:none; } a:hover { color:#1cc88a; text-decorat
 <body>
 
 <div class="card">
-    <h3>School Management Register</h3>
+    <h3>Campus Management Register</h3>
 
     <?php if(!empty($errors)): ?>
         <div class="alert alert-danger">

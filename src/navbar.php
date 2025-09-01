@@ -23,7 +23,7 @@ if (isset($_SESSION['user_id'])) {
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="#">School Management</a>
+        <a class="navbar-brand fw-bold" href="#">Campus Management</a>
         <div class="d-flex align-items-center ms-auto">
             <form method="post" action="search.php" class="d-flex align-items-center ms-auto">
                 <input class="form-control me-2" name="search" type="search" placeholder="Search">
