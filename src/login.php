@@ -1,7 +1,5 @@
 <?php
-
 session_start();
-// require_once ('auth.php'); 
 require_once('./db/connection.php'); 
 
 $errors = [];
@@ -9,34 +7,57 @@ $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password = $_POST['password'];
-
     
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE username=?");
-    $stmt->execute([$username]);
-    $user = $stmt->fetch();
-
-    if ($user) {
-        if (password_verify($password, $user['password'])) {
-           
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['role'] = $user['role'];
-
-             if ($_SESSION['role'] === 'teacher') {
-               
-                header("Location: teacher_dashboard.php");
-                exit();
-            } else {
-          
-                header("Location: dashboard.php"); 
-                exit();
-            }
-
-        } else {
-            $errors[] = "Incorrect password!";
-        }
+    // Verify reCAPTCHA
+    $recaptcha_secret = "6LexucQrAAAAAE0YuCfAO2o3bCU0dZuU_2iBj1ar"; // This is the secret key
+    $recaptcha_response = $_POST['g-recaptcha-response'];
+    
+    $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
+    $recaptcha_data = [
+        'secret' => $recaptcha_secret,
+        'response' => $recaptcha_response
+    ];
+    
+    $recaptcha_options = [
+        'http' => [
+            'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method' => 'POST',
+            'content' => http_build_query($recaptcha_data)
+        ]
+    ];
+    
+    $recaptcha_context = stream_context_create($recaptcha_options);
+    $recaptcha_result = file_get_contents($recaptcha_url, false, $recaptcha_context);
+    $recaptcha_json = json_decode($recaptcha_result, true);
+    
+    // Check if reCAPTCHA was successful
+    if (!$recaptcha_json['success']) {
+        $errors[] = "Please verify that you are not a robot.";
     } else {
-        $errors[] = "Username not found!";
+        // Proceed with login if reCAPTCHA is valid
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE username=?");
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
+
+        if ($user) {
+            if (password_verify($password, $user['password'])) {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['role'] = $user['role'];
+
+                if ($_SESSION['role'] === 'teacher') {
+                    header("Location: teacher_dashboard.php");
+                    exit();
+                } else {
+                    header("Location: dashboard.php"); 
+                    exit();
+                }
+            } else {
+                $errors[] = "Incorrect password!";
+            }
+        } else {
+            $errors[] = "Username not found!";
+        }
     }
 }
 ?>
@@ -82,12 +103,15 @@ a { color: #4e73df; text-decoration: none; }
 a:hover { color: #1cc88a; text-decoration: underline; }
 .mb-3 { margin-bottom: 1.2rem !important; }
 .alert { border-radius: 15px; }
+.recaptcha-container { margin-bottom: 1rem; }
 </style>
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
 
 <div class="card">
-    <h3>agement Login</h3>
+    <h3>Campus Management Login</h3>
 
     <?php if (!empty($errors)): ?>
         <div class="alert alert-danger">
@@ -95,7 +119,7 @@ a:hover { color: #1cc88a; text-decoration: underline; }
         </div>
     <?php endif; ?>
 
-    <form method="POST">
+    <form method="POST" id="loginForm">
         <div class="mb-3">
             <label for="username" class="form-label">Username</label>
             <input type="text" class="form-control" name="username" placeholder="Enter username" required>
@@ -104,12 +128,15 @@ a:hover { color: #1cc88a; text-decoration: underline; }
             <label for="password" class="form-label">Password</label>
             <input type="password" class="form-control" name="password" placeholder="Enter password" required>
         </div>
+
+        <div class="recaptcha-container">
+        <div class="g-recaptcha" data-sitekey="6LexucQrAAAAAM8YTp1VIQ7feWIS1i4rOahXrz7-"></div> 
+
+        </div>
+        
         <button type="submit" class="btn btn-primary w-100 mb-3">
             <i class="fas fa-sign-in-alt"></i> Login
         </button>
-        <div class="text-center">
-            <a href="register.php">Don't have an account? Register</a>
-        </div>
     </form>
 </div>
 

